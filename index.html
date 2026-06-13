@@ -2,21 +2,17 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Update Lazy Badge (Shields.io Powered)</title>
-    <style>
-        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: transparent; }
-        img { display: block; }
-    </style>
+    <title>Update Lazy Badge (SVG 直出版)</title>
 </head>
-<body>
+<body style="margin:0;padding:0;">
 <script type="text/javascript">
-// 1. 解析URL参数（保持你原来的参数不变）
+// 1. 解析URL参数（完全兼容原有参数）
 const urlParams = new URLSearchParams(window.location.search);
 const lastUpdateDateStr = urlParams.get('lastUpdate') || '2026-01-01';
 const badgeLabel = urlParams.get('label') || '拖更天数';
 const colorLate = urlParams.get('latecolor') || '#d73a4a';
 
-// 2. 计算拖更天数 + 日期容错处理
+// 2. 计算拖更天数（复用原有逻辑）
 function getDiffDay(targetDateStr) {
     const target = new Date(targetDateStr);
     if (isNaN(target.getTime())) return 0;
@@ -28,13 +24,66 @@ function getDiffDay(targetDateStr) {
 const diffDays = getDiffDay(lastUpdateDateStr);
 const rightText = diffDays === 0 ? "今日更新" : `${diffDays}天`;
 
-// 3. 构建 shields.io 官方徽章地址
-const shieldsUrl = new URL("https://img.shields.io/badge");
-shieldsUrl.pathname = `/badge/${encodeURIComponent(badgeLabel)}-${encodeURIComponent(rightText)}-${colorLate.replace('#', '')}`;
-shieldsUrl.searchParams.set("style", "flat");
-shieldsUrl.searchParams.set("labelColor", "555555");
+// 3. 工具函数：XML转义，防止特殊字符破坏SVG结构
+function escapeXml(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&apos;');
+}
 
-// 4. 直接将徽章图片嵌入页面，不跳转
+// 4. 工具函数：测量文字宽度，匹配shields字体样式
+function measureText(text) {
+    const canvas = measureText._canvas || (measureText._canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    // 兼容中文字体，与shields原生样式对齐
+    ctx.font = '11px "Microsoft YaHei", "PingFang SC", Verdana, Geneva, DejaVu Sans, sans-serif';
+    return ctx.measureText(text).width;
+}
+
+// 5. 计算徽章各部分尺寸
+const padding = 5; // 文字左右内边距，与shields官方一致
+const labelWidth = measureText(badgeLabel);
+const messageWidth = measureText(rightText);
+const leftBlockWidth = Math.ceil(labelWidth + padding * 2);
+const rightBlockWidth = Math.ceil(messageWidth + padding * 2);
+const totalWidth = leftBlockWidth + rightBlockWidth;
+const badgeHeight = 20; // shields标准高度
+const leftBgColor = '#555555'; // 左侧固定灰色
+
+// 6. 构建完整SVG（还原官方flat样式：圆角、文字阴影、顶部淡高光）
+const svgContent = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${badgeHeight}" role="img" aria-label="${escapeXml(badgeLabel)}: ${escapeXml(rightText)}">
+  <title>${escapeXml(badgeLabel)}: ${escapeXml(rightText)}</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <clipPath id="r">
+    <rect width="${totalWidth}" height="${badgeHeight}" rx="3" fill="#fff"/>
+  </clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${leftBlockWidth}" height="${badgeHeight}" fill="${leftBgColor}"/>
+    <rect x="${leftBlockWidth}" width="${rightBlockWidth}" height="${badgeHeight}" fill="${escapeXml(colorLate)}"/>
+    <rect width="${totalWidth}" height="${badgeHeight}" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family='"Microsoft YaHei", "PingFang SC", Verdana, Geneva, DejaVu Sans, sans-serif' font-size="11">
+    <text x="${leftBlockWidth / 2}" y="15" fill="#010101" fill-opacity=".3">${escapeXml(badgeLabel)}</text>
+    <text x="${leftBlockWidth / 2}" y="14">${escapeXml(badgeLabel)}</text>
+    <text x="${leftBlockWidth + rightBlockWidth / 2}" y="15" fill="#010101" fill-opacity=".3">${escapeXml(rightText)}</text>
+    <text x="${leftBlockWidth + rightBlockWidth / 2}" y="14">${escapeXml(rightText)}</text>
+  </g>
+</svg>
+`.trim();
+
+// 7. 直接输出SVG文档，替换当前页面
+document.open('image/svg+xml');
+document.write(svgContent);
+document.close();
+</script>
+</body>
+</html>// 4. 直接将徽章图片嵌入页面，不跳转
 document.body.innerHTML = `<img src="${shieldsUrl.toString()}" alt="badge">`;
 </script>
 </body>
