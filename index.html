@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Update Lazy Badge (Shields.io Powered)</title>
+    <style>
+        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: transparent; }
+        img { display: block; }
+    </style>
 </head>
-<body style="margin:0;padding:0;">
+<body>
 <script type="text/javascript">
 // 1. 解析URL参数（保持你原来的参数不变）
 const urlParams = new URLSearchParams(window.location.search);
 const lastUpdateDateStr = urlParams.get('lastUpdate') || '2026-01-01';
 const badgeLabel = urlParams.get('label') || '拖更天数';
-const colorLate = urlParams.get('latecolor') || '#d73a4a'; // 右侧红色底色，和你之前的配置兼容
+const colorLate = urlParams.get('latecolor') || '#d73a4a';
 
 // 2. 计算拖更天数 + 日期容错处理
 function getDiffDay(targetDateStr) {
@@ -24,16 +28,16 @@ function getDiffDay(targetDateStr) {
 const diffDays = getDiffDay(lastUpdateDateStr);
 const rightText = diffDays === 0 ? "今日更新" : `${diffDays}天`;
 
-// 3. 构建 shields.io 官方徽章地址（和你要的样式完全一致：左侧灰色，右侧红色）
-// 左侧灰色固定为 shields.io 标准 #555，右侧颜色用你配置的 colorLate
+// 3. 构建 shields.io 官方徽章地址
 const shieldsUrl = new URL("https://img.shields.io/badge");
 shieldsUrl.pathname = `/badge/${encodeURIComponent(badgeLabel)}-${encodeURIComponent(rightText)}-${colorLate.replace('#', '')}`;
-// 强制使用 shields.io 经典样式，和你截图里的徽章保持一致
 shieldsUrl.searchParams.set("style", "flat");
-shieldsUrl.searchParams.set("labelColor", "555555"); // 左侧灰色固定
+shieldsUrl.searchParams.set("labelColor", "555555");
 
-// 4. 直接重定向到 shields.io 生成的SVG，这样浏览器拿到的就是原生徽章
-window.location.replace(shieldsUrl.toString());
+// 4. 直接将徽章图片嵌入页面，不跳转
+document.body.innerHTML = `<img src="${shieldsUrl.toString()}" alt="badge">`;
 </script>
+</body>
+</html></script>
 </body>
 </html>
