@@ -4,17 +4,17 @@ on:
   # 每天北京时间 00:00:10 自动运行（UTC时间 16:00:10）
   schedule:
     - cron: "10 16 * * *"
-  # 仅修改脚本文件时触发运行
+  # 修改脚本文件时自动触发
   push:
     paths:
       - generate_badge.py
-  # 支持网页端手动触发
+  # 支持网页手动触发运行
   workflow_dispatch:
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    # 强制使用 Node.js 24，彻底消除 Node 20 弃用警告
+    # 强制使用 Node.js 24，消除 Node 20 弃用警告
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -25,24 +25,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          # 开启 pip 依赖缓存，大幅加快后续运行速度
           cache: "pip"
 
       - name: 安装依赖
-        run: pip install cairosvg
+        run: pip install --upgrade pip && pip install cairosvg
 
       - name: 运行脚本生成徽章图片
         run: python generate_badge.py
 
-      - name: 提交并推送更新后的图片
+      - name: 提交并更新图片
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # 先拉取远程最新代码，避免远程有新提交时推送失败
           git pull
-          git add badge.svg
-          # 无变更则跳过提交，有变更才执行提交推送
-          git diff --quiet && git diff --staged --quiet || (git commit -m "自动更新天数徽章" && git push)          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add badge.svg
           git diff --quiet && git diff --staged --quiet || (git commit -m "自动更新天数徽章" && git push)
